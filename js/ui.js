@@ -42,6 +42,7 @@
   ];
 
   var UI = {}, app, els = {}, currentCase = null;
+  var MANUAL_RATE = 28;   // catheter depth units / second while holding advance/withdraw
 
   function colorVar(pos) {
     var v = getComputedStyle(document.documentElement).getPropertyValue(POS_VAR[pos]);
@@ -68,6 +69,7 @@
     this.buildPressures();
     this.buildDerived();
     this.buildLibrary();
+    this.buildGauge();
     this.wireCatheter();
     this.wireChrome();
   };
@@ -145,30 +147,114 @@
     });
   };
 
+  /* ---------------- depth gauge ---------------- */
+  UI.buildGauge = function () {
+    var track = document.getElementById("dgTrack");
+    var labels = document.getElementById("dgLabels");
+    if (!track) return;
+    track.innerHTML = ""; if (labels) labels.innerHTML = "";
+    var max = RHC.DEPTH.max;
+    RHC.DEPTH.zones.forEach(function (z) {
+      var seg = document.createElement("span"); seg.className = "dg-zone";
+      seg.style.left = (z.lo / max * 100) + "%";
+      seg.style.width = ((z.hi - z.lo) / max * 100) + "%";
+      seg.style.background = colorVar(z.pos);
+      track.appendChild(seg);
+      if (labels) {
+        var lab = document.createElement("span"); lab.className = "dg-lbl";
+        lab.style.left = ((z.lo + z.hi) / 2 / max * 100) + "%";
+        lab.textContent = z.pos === "PCWP" ? "W" : z.pos;
+        labels.appendChild(lab);
+      }
+    });
+    var m = document.createElement("div"); m.className = "dg-marker"; track.appendChild(m);
+    els.dgMarker = m;
+    els.dgStatus = document.getElementById("dgStatus");
+  };
+
+  UI.updateGauge = function (info) {
+    if (els.dgMarker) els.dgMarker.style.left = (app.sim.depth / RHC.DEPTH.max * 100) + "%";
+    var st = els.dgStatus; if (!st) return;
+    if (info.clean) {
+      st.textContent = info.pos === "PCWP" ? "✓ Wedged — clean PCWP tracing" : "✓ " + info.pos + " — clean waveform";
+      st.className = "dg-status good";
+    } else if (info.state === "pre") {
+      st.textContent = "Advance into the right atrium…"; st.className = "dg-status";
+    } else if (info.state === "over") {
+      st.textContent = "⚠ Over-wedged — withdraw slightly"; st.className = "dg-status crit";
+    } else {
+      st.textContent = "◌ " + info.blendA + " → " + info.blendB + " — seat the catheter"; st.className = "dg-status warn";
+    }
+  };
+
   /* ---------------- catheter controls ---------------- */
   UI.wireCatheter = function () {
+    // snap to a chamber's sweet spot
     document.querySelectorAll("#posSeg button").forEach(function (b) {
       b.addEventListener("click", function () { app.stopAuto(); UI.setPosition(b.dataset.pos); });
     });
-    document.getElementById("btnAdvance").addEventListener("click", function () {
-      app.stopAuto(); var i = ORDER.indexOf(app.sim.position); UI.setPosition(ORDER[Math.min(3, i + 1)]);
-    });
-    document.getElementById("btnWithdraw").addEventListener("click", function () {
-      app.stopAuto(); var i = ORDER.indexOf(app.sim.position); UI.setPosition(ORDER[Math.max(0, i - 1)]);
-    });
+    // hold Advance / Withdraw to move the catheter continuously
+    function holdBtn(id, vel) {
+      var b = document.getElementById(id);
+      b.addEventListener("pointerdown", function (e) { if (e.preventDefault) e.preventDefault(); app.stopAuto(); app.cathVel = vel; });
+      b.addEventListener("pointerleave", function () { app.cathVel = 0; });
+    }
+    holdBtn("btnAdvance", MANUAL_RATE);
+    holdBtn("btnWithdraw", -MANUAL_RATE);
+    window.addEventListener("pointerup", function () { app.cathVel = 0; });
     document.getElementById("btnAuto").addEventListener("click", function () { app.toggleAuto(); });
+
+    // drag/scrub the depth gauge to set position directly
+    var track = document.getElementById("dgTrack"), dragging = false;
+    function setFromEvent(e) {
+      var r = track.getBoundingClientRect();
+      var f = (e.clientX - r.left) / r.width; f = f < 0 ? 0 : f > 1 ? 1 : f;
+      app.stopAuto(); app.sim.setDepth(f * RHC.DEPTH.max); UI.onDepthChange();
+    }
+    if (track) {
+      track.addEventListener("pointerdown", function (e) { dragging = true; if (track.setPointerCapture) try { track.setPointerCapture(e.pointerId); } catch (x) {} setFromEvent(e); });
+      track.addEventListener("pointermove", function (e) { if (dragging) setFromEvent(e); });
+      window.addEventListener("pointerup", function () { dragging = false; });
+    }
+    // arrow keys nudge depth (when not focused on a control)
+    window.addEventListener("keydown", function (e) {
+      if (/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)) return;
+      if (e.key === "ArrowRight") { app.stopAuto(); app.sim.setDepth(app.sim.depth + 2); UI.onDepthChange(); }
+      else if (e.key === "ArrowLeft") { app.stopAuto(); app.sim.setDepth(app.sim.depth - 2); UI.onDepthChange(); }
+    });
   };
 
-  UI.setPosition = function (pos) {
-    app.sim.setPosition(pos);
+  // snap to a chamber center, then refresh everything
+  UI.setPosition = function (pos) { app.sim.setPosition(pos); UI.onDepthChange(); };
+
+  // single source of truth for refreshing position-dependent UI from sim.depth
+  UI.onDepthChange = function () {
+    var sim = app.sim, info = RHC.depthInfo(sim.depth);
+    // chamber buttons highlight only when cleanly seated
     document.querySelectorAll("#posSeg button").forEach(function (b) {
-      b.classList.toggle("active", b.dataset.pos === pos);
+      b.classList.toggle("active", info.clean && b.dataset.pos === info.pos);
     });
+    // scope label + color
     var lbl = document.getElementById("pressLabel");
-    lbl.textContent = pos; lbl.style.color = colorVar(pos);
-    document.getElementById("posChipVal").textContent = pos;
-    document.getElementById("bannerText").textContent = BANNER[pos];
-    app.heart.update(pos);
+    lbl.textContent = info.clean ? info.pos
+      : info.state === "over" ? "PCWP"
+      : info.state === "pre" ? "RA"
+      : info.blendA + "–" + info.blendB;
+    lbl.style.color = RHC.depthColor(sim.depth);
+    // position chip
+    document.getElementById("posChipVal").textContent = info.clean ? info.pos
+      : info.state === "over" ? "PCWP+"
+      : info.state === "pre" ? "RA"
+      : info.blendA + "→" + info.blendB;
+    // banner: teaching hint when seated, guidance otherwise
+    var banner = document.getElementById("bannerText"), bn = document.getElementById("banner");
+    bn.className = "alarm-bar";
+    if (info.clean) banner.textContent = BANNER[info.pos];
+    else if (info.state === "pre") banner.textContent = "In the vena cava / RA junction — advance the catheter into the right atrium.";
+    else if (info.state === "over") { banner.textContent = "⚠ Over-wedged — the tracing is damping and drifting upward. Withdraw slightly to recover the wedge."; bn.className = "alarm-bar warn"; }
+    else banner.textContent = "Between " + info.blendA + " and " + info.blendB + " — the tip is straddling the junction. Keep moving to seat it in " + info.blendB + ".";
+    UI.updateGauge(info);
+    app.heart.updateDepth(sim.depth);
   };
 
   UI.setAutoBtn = function (on) {

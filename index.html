@@ -51,7 +51,13 @@
           <button id="btnAdvance" class="m-btn">Advance ▶</button>
         </div>
         <button id="btnAuto" class="m-btn auto-btn">▶ Auto-advance (RA → wedge)</button>
-        <p class="maneuver-hint">Advance RA → RV → PA → wedge, or auto-sweep all four.</p>
+
+        <div class="depth-gauge">
+          <div class="dg-labels" id="dgLabels"></div>
+          <div class="dg-track" id="dgTrack" title="Drag to position the catheter"></div>
+          <div class="dg-status" id="dgStatus">RA</div>
+        </div>
+        <p class="maneuver-hint"><b>Hold</b> Advance/Withdraw (or drag the gauge / use ← →) to move the catheter continuously — seat it in a chamber for a clean waveform. Click a chamber to jump.</p>
       </section>
 
       <section class="panel">

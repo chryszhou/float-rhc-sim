@@ -6,14 +6,15 @@
 
   var DT = 0.005;        // fixed cardiac timestep (s)
   var MAX_FRAME = 0.1;   // clamp big gaps (backgrounded tab)
-  var ORDER = ["RA", "RV", "PA", "PCWP"];
+  var AUTO_RATE = 7;     // catheter depth units / second during auto-advance
 
   var app = {
     sim: new RHC.Simulator(),
     scope: null, pullback: null, heart: null,
     frozen: false, speed: 1,
     quiz: false, revealed: false,
-    autoTimer: null,
+    cathVel: 0,          // set by holding Advance/Withdraw (depth units/sec)
+    autoSweep: false,    // continuous RA→wedge sweep
     loadCase: loadCase,
     loadRandomCase: loadRandomCase,
     toggleAuto: toggleAuto,
@@ -29,7 +30,7 @@
     RHC.UI.syncPatient();
     RHC.UI.refreshMonitors();
     RHC.UI.markActiveCase(id);
-    RHC.UI.setPosition(app.sim.position);   // refresh label/heart/banner for current position
+    RHC.UI.onDepthChange();   // refresh label/heart/banner/gauge for current depth
     RHC.UI.showTeaching(c);
   }
 
@@ -39,21 +40,12 @@
   }
 
   function startAuto() {
-    stopAuto();
+    if (app.sim.depth >= RHC.DEPTH.max - 1) app.sim.setDepth(0);  // restart sweep from the top
+    app.autoSweep = true; app.cathVel = 0;
     RHC.UI.setAutoBtn(true);
-    var i = 0;
-    RHC.UI.setPosition("RA");
-    app.autoTimer = setInterval(function () {
-      i++;
-      if (i > 3) { stopAuto(); return; }
-      RHC.UI.setPosition(ORDER[i]);
-    }, 2800);
   }
-  function stopAuto() {
-    if (app.autoTimer) { clearInterval(app.autoTimer); app.autoTimer = null; }
-    RHC.UI.setAutoBtn(false);
-  }
-  function toggleAuto() { if (app.autoTimer) stopAuto(); else startAuto(); }
+  function stopAuto() { app.autoSweep = false; RHC.UI.setAutoBtn(false); }
+  function toggleAuto() { if (app.autoSweep) stopAuto(); else startAuto(); }
 
   function init() {
     app.scope = new RHC.Scope({
@@ -80,15 +72,29 @@
     function frame(now) {
       var elapsed = (now - last) / 1000; last = now;
       if (elapsed > MAX_FRAME) elapsed = MAX_FRAME;
+
+      // ---- continuous catheter motion (auto sweep or held buttons) ----
+      var dmove = 0;
+      if (app.autoSweep) dmove = AUTO_RATE * elapsed;
+      if (app.cathVel) { dmove = app.cathVel * elapsed; if (app.autoSweep) stopAuto(); }
+      if (dmove) {
+        app.sim.setDepth(app.sim.depth + dmove);
+        if (app.autoSweep && app.sim.depth >= RHC.DEPTH.max) stopAuto();
+        RHC.UI.onDepthChange();
+      }
+
+      // ---- advance the waveform ----
       if (!app.frozen) {
+        var col = RHC.depthColor(app.sim.depth);   // one color lookup per frame
         acc += elapsed * app.speed;
         var steps = 0;
         while (acc >= DT && steps < 800) {
           app.sim.step(DT);
-          app.scope.push(app.sim.t, app.sim.out, app.sim.position);
+          app.scope.push(app.sim.t, app.sim.out, col);
           acc -= DT; steps++;
         }
       }
+
       app.scope.frozen = app.frozen;
       app.scope.draw();
       app.pullback.draw();

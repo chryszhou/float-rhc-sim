@@ -108,6 +108,54 @@
     return atrialWaveAt(ph, h.pcwp, true);
   }
 
+  /* ---------- Continuous catheter depth ----------
+     The catheter occupies a continuous depth (0–100). Each chamber has a
+     "clean" zone; between zones the tip straddles a valve/junction and the
+     tracing is a blend of the two neighbours (so the learner must seat the
+     catheter to get a clean waveform). Past the last zone the balloon
+     over-wedges — pulsatility damps out and the pressure drifts up.        */
+  var DEPTH = {
+    max: 100,
+    zones: [
+      { pos: "RA",   lo: 6,  hi: 24 },
+      { pos: "RV",   lo: 32, hi: 50 },
+      { pos: "PA",   lo: 58, hi: 76 },
+      { pos: "PCWP", lo: 84, hi: 94 }
+    ]
+  };
+  function zoneCenter(pos) {
+    var z = DEPTH.zones;
+    for (var i = 0; i < z.length; i++) if (z[i].pos === pos) return (z[i].lo + z[i].hi) / 2;
+    return z[0].lo;
+  }
+  // classify a depth → { state, pos, clean, blendA, blendB, t }
+  function depthInfo(d) {
+    var z = DEPTH.zones;
+    if (d < z[0].lo) return { state: "pre", pos: "RA", clean: false, blendA: "RA", blendB: "RA", t: 0 };
+    for (var i = 0; i < z.length; i++) {
+      if (d <= z[i].hi) {
+        if (d >= z[i].lo) return { state: "clean", pos: z[i].pos, clean: true, blendA: z[i].pos, blendB: z[i].pos, t: 0 };
+        var a = z[i - 1], b = z[i], t = (d - a.hi) / (b.lo - a.hi);
+        return { state: "trans", pos: (t < 0.5 ? a.pos : b.pos), clean: false, blendA: a.pos, blendB: b.pos, t: t };
+      }
+    }
+    var last = z[z.length - 1];
+    return { state: "over", pos: "PCWP", clean: false, blendA: "PCWP", blendB: "PCWP",
+             t: clamp((d - last.hi) / (DEPTH.max - last.hi), 0, 1) };
+  }
+  // instantaneous pressure for a continuous depth
+  function pressureAtDepth(d, ph, h) {
+    var info = depthInfo(d);
+    if (info.state === "clean") return sampleP(info.pos, ph, h);
+    if (info.state === "pre") { var ra = sampleP("RA", ph, h), m = h.ra.mean; return m + 0.45 * (ra - m); }
+    if (info.state === "over") {
+      var w = sampleP("PCWP", ph, h), wm = h.pcwp.mean, t = info.t;
+      return (wm + (w - wm) * (1 - 0.85 * t)) + t * 10;   // damp pulsatility + upward drift
+    }
+    var pa = sampleP(info.blendA, ph, h), pb = sampleP(info.blendB, ph, h);
+    return pa * (1 - info.t) + pb * info.t;               // straddling-valve blend
+  }
+
   /* ===================================================================
      Simulator — clocks, current-position output, derived hemodynamics
      =================================================================== */
@@ -115,7 +163,8 @@
     this.t = 0;
     this.cardPhase = 0;
     this.respPhase = 0;
-    this.position = "RA";
+    this.depth = zoneCenter("RA");   // continuous catheter depth (0–100)
+    this.position = "RA";            // derived dominant chamber (label/color)
     this.hemo = null;
     this.out = { p: 0, ecg: 0, phase: 0, resp: 0, eExp: false };
     this.meas = {};
@@ -130,7 +179,11 @@
     this.computeDerived();
   };
 
-  Simulator.prototype.setPosition = function (pos) { this.position = pos; };
+  Simulator.prototype.setDepth = function (d) {
+    this.depth = clamp(d, 0, DEPTH.max);
+    this.position = depthInfo(this.depth).pos;  // keep derived chamber in sync
+  };
+  Simulator.prototype.setPosition = function (pos) { this.setDepth(zoneCenter(pos)); };
 
   Simulator.prototype.step = function (dt) {
     this.t += dt;
@@ -138,7 +191,7 @@
     this.respPhase = wrap(this.respPhase + dt * this.rr / 60);
     var roff = respOffset(this.respPhase, this.hemo.resp.depth, this.hemo.resp.dir);
     this.out.ecg = ecgAt(this.cardPhase);
-    this.out.p = sampleP(this.position, this.cardPhase, this.hemo) + roff * respWeight(this.position);
+    this.out.p = pressureAtDepth(this.depth, this.cardPhase, this.hemo) + roff * respWeight(this.position);
     this.out.phase = this.cardPhase;
     this.out.resp = this.respPhase;
     this.out.eExp = (this.respPhase >= 0.80);   // end-expiration window
@@ -179,6 +232,10 @@
   RHC.sampleP = sampleP;
   RHC.ecgAt = ecgAt;
   RHC.TS = TS;
+  RHC.DEPTH = DEPTH;
+  RHC.depthInfo = depthInfo;
+  RHC.zoneCenter = zoneCenter;
+  RHC.pressureAtDepth = pressureAtDepth;
   RHC.Simulator = Simulator;
 
 })(window.RHC = window.RHC || {});

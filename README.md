@@ -17,9 +17,15 @@ and shares its zero-dependency, cath-lab-monitor aesthetic.
 
 - **Live ECG + pressure tracing** that scrolls like a real cath-lab monitor, colored
   by catheter position (RA blue, RV green, PA yellow, PCWP violet).
-- **Catheter map** — an SVG schematic that highlights the current chamber and threads
-  the balloon-tipped catheter to the tip. Step **Advance / Withdraw** or **Auto-advance**
-  to sweep RA → wedge.
+- **Continuous catheter depth** — the catheter moves through a continuous depth, not
+  fixed stops. **Hold** Advance/Withdraw, drag the depth gauge, or use ← → to move it;
+  you only get a clean waveform when the tip is *seated* in a chamber. In between you see
+  the blended, straddling-the-junction tracing, and pushing past the wedge produces the
+  damped, drifting **over-wedge** artifact — so the learner has to find the right spot.
+- **Catheter map + depth gauge** — an SVG schematic highlights the seated chamber and
+  threads the balloon-tipped catheter to the tip; a zoned gauge shows depth and live
+  feedback ("✓ seated" / "seat the catheter" / "over-wedged"). Click a chamber to jump
+  to its sweet spot, or **Auto-advance** to sweep RA → wedge continuously.
 - **Composite pullback reference** — all four positions side-by-side on one mmHg scale.
 - **Pressures + derived hemodynamics** — RA/RV/PA/PCWP, plus CO, CI, SVR, PVR (Wood
   units & dynes), TPG, DPG, SV and SvO₂, color-coded against normal ranges.

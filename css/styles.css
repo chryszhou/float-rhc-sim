@@ -123,6 +123,23 @@ body {
 .m-btn.armed, .m-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .auto-btn { width: 100%; margin-top: 9px; }
 .maneuver-hint { font-size: 10px; color: var(--text-dim); margin: 9px 0 0; }
+.maneuver-hint b { color: var(--text); }
+
+/* ---------------- Depth gauge ---------------- */
+.depth-gauge { margin-top: 12px; }
+.dg-labels { position: relative; height: 12px; margin-bottom: 3px; }
+.dg-lbl { position: absolute; transform: translateX(-50%); font-size: 8.5px; font-family: var(--mono); color: var(--text-dim); }
+.dg-track {
+  position: relative; height: 12px; border-radius: 6px;
+  background: var(--bg-panel2); border: 1px solid var(--border);
+  overflow: hidden; cursor: ew-resize; touch-action: none;
+}
+.dg-zone { position: absolute; top: 0; bottom: 0; opacity: 0.5; }
+.dg-marker { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: var(--text-bright); box-shadow: 0 0 0 1px rgba(0,0,0,.55); }
+.dg-status { margin-top: 7px; font-size: 11px; font-family: var(--mono); color: var(--text-dim); min-height: 14px; }
+.dg-status.good { color: var(--good); }
+.dg-status.warn { color: var(--warn); }
+.dg-status.crit { color: var(--crit); }
 
 /* ---------------- Heart schematic ---------------- */
 .heart-wrap { display: flex; justify-content: center; }

@@ -55,9 +55,9 @@
   Scope.prototype.setCursor = function (f) { this.cursor = f; };
   Scope.prototype.refreshColors = function () { this.col = posColors(); };
 
-  Scope.prototype.push = function (t, out, pos) {
+  Scope.prototype.push = function (t, out, col) {
     this.t = t;
-    this.samples.push({ t: t, ecg: out.ecg, p: out.p, eExp: out.eExp, pos: pos });
+    this.samples.push({ t: t, ecg: out.ecg, p: out.p, eExp: out.eExp, col: col });
     var cutoff = t - this.windowSec - 0.5;
     if (this.samples.length > 4 && this.samples[0].t < cutoff) {
       var i = 0; while (i < this.samples.length && this.samples[i].t < cutoff) i++;
@@ -152,15 +152,15 @@
 
     if (s.length < 2) return;
 
-    // ---- trace, colored by each sample's catheter position ----
+    // ---- trace, colored by each sample's catheter depth (blends in transitions) ----
     ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round";
-    var curPos = null;
+    var curCol = null;
     for (var k = 0; k < s.length; k++) {
-      if (s[k].pos !== curPos) {
-        if (curPos !== null) ctx.stroke();
+      if (s[k].col !== curCol) {
+        if (curCol !== null) ctx.lineTo(x(s[k].t), y(s[k].p)), ctx.stroke();
         ctx.beginPath();
-        ctx.strokeStyle = this.col[s[k].pos] || "#fff";
-        curPos = s[k].pos;
+        ctx.strokeStyle = s[k].col || "#fff";
+        curCol = s[k].col;
         ctx.moveTo(x(s[k].t), y(s[k].p));
       } else {
         ctx.lineTo(x(s[k].t), y(s[k].p));
@@ -174,7 +174,7 @@
       ctx.strokeStyle = "rgba(232,240,252,0.5)"; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
       ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke(); ctx.setLineDash([]);
       if (cs) {
-        var col = this.col[cs.pos] || "#fff", cyv = y(cs.p);
+        var col = cs.col || "#fff", cyv = y(cs.p);
         ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cyv, 3.2, 0, 2 * Math.PI); ctx.fill();
         var label = Math.round(cs.p) + " mmHg";
         ctx.font = "bold 12px monospace";
@@ -254,28 +254,59 @@
   };
 
   /* ============================================================
-     Heart — SVG catheter map updater
+     Heart — SVG catheter map updater (continuous depth)
      ============================================================ */
-  var TIP = { RA: [76, 62], RV: [80, 150], PA: [166, 58], PCWP: [220, 80] };
-  var SEG_FOR_IDX = ["seg-enter", "seg-ra", "seg-rv", "seg-pa"]; // shown cumulatively
-  var ORDER = ["RA", "RV", "PA", "PCWP"];
+  // catheter tip path: depth → (x, y) along the SVG, interpolated linearly
+  var PATHPTS = [
+    { d: 0,   x: 76,  y: 12 }, { d: 6,  x: 76,  y: 42 }, { d: 15, x: 76,  y: 62 },
+    { d: 24,  x: 80,  y: 92 }, { d: 32, x: 80,  y: 122 }, { d: 41, x: 80, y: 150 },
+    { d: 50,  x: 100, y: 116 }, { d: 58, x: 132, y: 78 }, { d: 67, x: 166, y: 58 },
+    { d: 76,  x: 196, y: 64 }, { d: 84, x: 213, y: 76 }, { d: 89, x: 222, y: 82 },
+    { d: 100, x: 232, y: 86 }
+  ];
+  function tipAt(d) {
+    if (d <= PATHPTS[0].d) return [PATHPTS[0].x, PATHPTS[0].y];
+    for (var i = 1; i < PATHPTS.length; i++) {
+      if (d <= PATHPTS[i].d) {
+        var a = PATHPTS[i - 1], b = PATHPTS[i], t = (d - a.d) / (b.d - a.d);
+        return [a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t];
+      }
+    }
+    var L = PATHPTS[PATHPTS.length - 1]; return [L.x, L.y];
+  }
+  var SEG_ON = [{ id: "seg-enter", d: 1 }, { id: "seg-ra", d: 24 }, { id: "seg-rv", d: 50 }, { id: "seg-pa", d: 76 }];
+  var ACT = { RA: "ch-ra", RV: "ch-rv", PA: "ch-pa", PCWP: "ch-pcwp" };
+
   function Heart(svg) { this.svg = svg; }
-  Heart.prototype.update = function (pos) {
-    var idx = ORDER.indexOf(pos);
-    // chamber highlight
+  Heart.prototype.updateDepth = function (d) {
+    var info = RHC.depthInfo(d);
     ["ch-ra", "ch-rv", "ch-pa", "ch-pcwp"].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.classList.remove("active");
     });
-    var act = { RA: "ch-ra", RV: "ch-rv", PA: "ch-pa", PCWP: "ch-pcwp" }[pos];
-    var ae = document.getElementById(act); if (ae) ae.classList.add("active");
-    // cumulative catheter segments
-    for (var i = 0; i < SEG_FOR_IDX.length; i++) {
-      var seg = document.getElementById(SEG_FOR_IDX[i]);
-      if (seg) seg.classList.toggle("on", i <= idx);
+    if (info.clean || info.state === "over") {
+      var ae = document.getElementById(ACT[info.pos]); if (ae) ae.classList.add("active");
     }
-    // tip
-    var tip = document.getElementById("cathTip"), a = TIP[pos];
-    if (tip && a) tip.setAttribute("transform", "translate(" + a[0] + "," + a[1] + ")");
+    SEG_ON.forEach(function (s) { var el = document.getElementById(s.id); if (el) el.classList.toggle("on", d >= s.d); });
+    var p = tipAt(d), tip = document.getElementById("cathTip");
+    if (tip) tip.setAttribute("transform", "translate(" + p[0].toFixed(1) + "," + p[1].toFixed(1) + ")");
+  };
+  Heart.prototype.update = function (pos) { this.updateDepth(RHC.zoneCenter(pos)); };
+
+  /* ---------- depth → trace color (blends across transitions) ---------- */
+  function hexToRgb(h) {
+    h = (h || "").trim().replace("#", "");
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function lerpHex(a, b, t) {
+    var x = hexToRgb(a), y = hexToRgb(b);
+    return "rgb(" + Math.round(x[0] + (y[0] - x[0]) * t) + "," + Math.round(x[1] + (y[1] - x[1]) * t) + "," + Math.round(x[2] + (y[2] - x[2]) * t) + ")";
+  }
+  RHC.depthColor = function (d) {
+    var c = posColors(), info = RHC.depthInfo(d);
+    if (info.state === "clean" || info.state === "pre") return c[info.pos];
+    if (info.state === "over") return c.PCWP;
+    return lerpHex(c[info.blendA], c[info.blendB], info.t);
   };
 
   RHC.Scope = Scope;
