@@ -1,0 +1,306 @@
+/* ===================================================================
+   RHC Sim — cath-lab hemodynamic monitor aesthetic
+   (sibling of the Tidal ventilator sim; light-pink accent)
+   =================================================================== */
+:root {
+  --bg:        #0a0e14;
+  --bg-panel:  #121822;
+  --bg-panel2: #0d121b;
+  --bg-scope:  #05070b;
+  --border:    #232c3a;
+  --border-lt: #2f3a4d;
+  --text:      #c9d4e3;
+  --text-dim:  #6f7e93;
+  --text-bright:#eef3fa;
+
+  /* light-pink brand accent */
+  --accent:    #ff9ec7;
+  --accent-dim:#d2779b;
+  --on-accent: #2a0a16;   /* text on a pink fill */
+
+  /* pressure-trace colors (clinical monitor convention) */
+  --c-ra:   #45c8ff;   /* RA / CVP  – blue   */
+  --c-rv:   #46d38a;   /* RV        – green  */
+  --c-pa:   #ffce4a;   /* PA        – yellow */
+  --c-pcwp: #b79bff;   /* PCWP      – violet */
+  --c-ecg:  #59e08a;   /* ECG       – green  */
+
+  --warn:   #ff9f1c;
+  --crit:   #ff4d4d;
+  --good:   #35d07f;
+
+  --mono: "SF Mono", "JetBrains Mono", "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------- Header ---------------- */
+#topbar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, #1a1320, #0c121b);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.logo { color: var(--accent); font-size: 20px; line-height: 1; transform: translateY(2px); }
+.brand-name { font-size: 19px; font-weight: 700; letter-spacing: .5px; color: var(--text-bright); }
+.brand-sub { font-size: 11px; color: var(--text-dim); letter-spacing: .3px; white-space: nowrap; }
+.topbar-status { display: flex; gap: 10px; margin-left: 6px; }
+.status-chip {
+  display: flex; flex-direction: column; padding: 4px 12px;
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px;
+}
+.status-chip label { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+.status-chip span { font-size: 14px; font-weight: 600; color: var(--text-bright); font-family: var(--mono); white-space: nowrap; }
+#caseChip span { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.transport { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.t-btn {
+  background: var(--bg-panel); color: var(--text); border: 1px solid var(--border-lt);
+  padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+}
+.t-btn:hover { border-color: var(--accent-dim); }
+.t-btn.frozen { background: var(--warn); color: #1a1205; border-color: var(--warn); }
+.t-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.speed-wrap { display: flex; align-items: center; gap: 6px; }
+.speed-wrap label { font-size: 11px; color: var(--text-dim); }
+.speed-wrap select {
+  background: var(--bg-panel2); color: var(--text); border: 1px solid var(--border-lt);
+  border-radius: 5px; padding: 5px 7px; font-family: var(--mono); font-size: 12px;
+}
+
+/* ---------------- Layout ---------------- */
+#layout {
+  display: grid;
+  grid-template-columns: 290px 1fr 250px;
+  gap: 12px;
+  padding: 12px;
+  align-items: start;
+}
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 13px;
+  margin-bottom: 12px;
+}
+.panel-title {
+  margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+  color: var(--accent); text-transform: uppercase;
+}
+.truth-tag {
+  font-size: 8px; background: #3a1726; color: var(--accent); padding: 2px 5px;
+  border-radius: 4px; letter-spacing: .5px; margin-left: 4px; vertical-align: middle;
+}
+
+/* ---------------- Catheter controls ---------------- */
+.seg { display: flex; gap: 0; border: 1px solid var(--border-lt); border-radius: 6px; overflow: hidden; }
+.seg button {
+  flex: 1; background: var(--bg-panel2); color: var(--text-dim); border: none;
+  padding: 8px 4px; cursor: pointer; font-size: 12px; font-weight: 700; font-family: var(--mono);
+}
+.seg button:hover { color: var(--text); }
+.seg button.active { background: var(--accent); color: var(--on-accent); }
+.seg.seg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; }
+.seg.seg-grid button { border-right: 1px solid var(--border-lt); }
+.seg.seg-grid button:last-child { border-right: none; }
+
+.cath-steppers { display: flex; gap: 8px; margin-top: 9px; }
+.m-btn {
+  flex: 1; background: var(--bg-panel2); border: 1px solid var(--border-lt); color: var(--text);
+  padding: 9px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;
+}
+.m-btn:hover { border-color: var(--accent-dim); }
+.m-btn.armed, .m-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.auto-btn { width: 100%; margin-top: 9px; }
+.maneuver-hint { font-size: 10px; color: var(--text-dim); margin: 9px 0 0; }
+
+/* ---------------- Heart schematic ---------------- */
+.heart-wrap { display: flex; justify-content: center; }
+#heartSvg { width: 100%; max-width: 250px; height: auto; }
+.chamber { fill: var(--bg-panel2); stroke: var(--border-lt); stroke-width: 1.6; transition: fill .15s, stroke .15s; }
+.vessel  { fill: none; stroke: var(--border-lt); stroke-width: 11; stroke-linecap: round; transition: stroke .15s; }
+#ch-ra.active   { stroke: var(--c-ra);   fill: rgba(69,200,255,0.16); }
+#ch-rv.active   { stroke: var(--c-rv);   fill: rgba(70,211,138,0.16); }
+#ch-pa.active   { stroke: var(--c-pa); }
+#ch-pcwp.active { stroke: var(--c-pcwp); fill: rgba(183,155,255,0.20); }
+.ch-label { fill: var(--text-dim); font: 700 11px var(--mono); text-anchor: middle; pointer-events: none; }
+.wedge-label { font-size: 8.5px; letter-spacing: .3px; }
+.cath { fill: none; stroke: #3a4456; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 1 5; }
+.cath.on { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: none; }
+.balloon { fill: rgba(255,158,199,0.45); stroke: var(--accent); stroke-width: 1; }
+.tipdot { fill: var(--accent); }
+
+/* ---------------- Patient controls (sliders) ---------------- */
+.ctrl { margin-bottom: 11px; }
+.ctrl-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.ctrl-label { font-size: 11px; color: var(--text-dim); letter-spacing: .3px; }
+.ctrl-value { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text-bright); }
+.ctrl-value small { font-size: 10px; color: var(--text-dim); font-weight: 400; margin-left: 2px; }
+.ctrl input[type=range] {
+  width: 100%; -webkit-appearance: none; appearance: none; height: 4px;
+  background: var(--border-lt); border-radius: 3px; outline: none; margin: 4px 0 0;
+}
+.ctrl input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid #0a0e14;
+}
+.ctrl input[type=range]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #0a0e14;
+}
+
+/* ---------------- Banner / scope ---------------- */
+#centercol { min-width: 0; }
+.alarm-bar {
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 14px; margin-bottom: 10px; font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim); letter-spacing: .3px;
+}
+.alarm-bar.warn { background: #2a1f08; border-color: var(--warn); color: var(--warn); }
+.alarm-bar.crit { background: #2c0d0d; border-color: var(--crit); color: #ff8a8a; }
+
+.scope {
+  background: var(--bg-scope); border: 1px solid var(--border); border-radius: 10px;
+  padding: 6px 8px 6px 0; overflow: hidden;
+}
+.scope.measuring { cursor: crosshair; }
+.wave-row { display: flex; align-items: stretch; position: relative; }
+.wave-row.ecg-row { height: 78px; }
+.wave-row.press-row { height: 262px; }
+.wave-row + .wave-row { border-top: 1px solid #11161f; }
+.wave-label {
+  width: 60px; flex: 0 0 60px; display: flex; flex-direction: column; justify-content: center;
+  align-items: flex-end; padding-right: 8px; gap: 1px;
+}
+.wl-title { font-size: 14px; font-weight: 700; font-family: var(--mono); }
+.wl-unit { font-size: 9px; color: #6f7e93; }
+.wave-canvas { flex: 1; height: 100%; width: 100%; display: block; }
+
+/* ---------------- Pullback composite ---------------- */
+.loops {
+  margin-top: 12px; background: var(--bg-scope); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 10px;
+}
+.loop-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.loop-head > span { font-size: 11px; letter-spacing: .8px; color: #8493a8; text-transform: uppercase; }
+.loop-head .loop-sub { font-size: 10px; letter-spacing: .3px; color: #6f7e93; text-transform: none; }
+.loop-canvas { width: 100%; height: 200px; display: block; }
+
+/* ---------------- Monitors (pressures + derived) ---------------- */
+.mon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mon {
+  background: var(--bg-panel2); border: 1px solid var(--border); border-radius: 7px;
+  padding: 7px 9px; min-width: 0;
+}
+.mon.full { grid-column: 1 / -1; }
+.mon-label { font-size: 9px; color: var(--text-dim); letter-spacing: .6px; text-transform: uppercase; }
+.mon-value { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--text-bright); line-height: 1.15; }
+.mon-value small { font-size: 10px; color: var(--text-dim); font-weight: 400; margin-left: 3px; }
+.mon-value.warn { color: var(--warn); }
+.mon-value.crit { color: var(--crit); }
+.mon-value.good { color: var(--good); }
+.mon-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align: middle; }
+
+/* ---------------- Case drawer ---------------- */
+.case-drawer { padding: 4px 12px 0; }
+.case-drawer-head h2 { margin: 0 0 2px; font-size: 15px; color: var(--text-bright); }
+.case-drawer-head p { margin: 0 0 12px; font-size: 12px; color: var(--text-dim); max-width: 760px; }
+.case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.case-card {
+  text-align: left; background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 9px; padding: 11px 12px; cursor: pointer; transition: border-color .12s, transform .12s;
+}
+.case-card:hover { border-color: var(--accent-dim); transform: translateY(-1px); }
+.case-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.cc-cat {
+  display: inline-block; font-size: 8.5px; letter-spacing: .8px; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px; margin-bottom: 7px; font-weight: 700;
+}
+.cc-cat.baseline    { background: #3a1726; color: var(--accent); }
+.cc-cat.pulm-htn    { background: #16243a; color: #7fb6ff; }
+.cc-cat.right-heart { background: #0f2a25; color: #5fe0b0; }
+.cc-cat.pericardial { background: #2a1633; color: #d79bff; }
+.cc-cat.shock       { background: #36210e; color: #ffb259; }
+.cc-cat.valve       { background: #2d1422; color: #ff9ec7; }
+.cc-name { font-size: 13.5px; font-weight: 700; color: var(--text-bright); margin-bottom: 3px; }
+.cc-blurb { font-size: 11px; color: var(--text-dim); line-height: 1.35; }
+
+/* ---------------- Teaching ---------------- */
+.teaching { margin: 16px 12px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.teaching-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.teaching-head h2 { margin: 0; font-size: 18px; color: var(--text-bright); }
+.teach-cat { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent-dim); padding: 2px 9px; border-radius: 10px; }
+.teach-desc { font-size: 13px; color: var(--text); margin: 0 0 14px; max-width: 900px; }
+.teach-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.teach-cols h3 { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin: 0 0 7px; }
+.teach-cols ul { margin: 0; padding-left: 18px; }
+.teach-cols li { font-size: 12.5px; margin-bottom: 6px; color: var(--text); }
+.teach-cols li b { color: var(--text-bright); }
+.quiz-veil {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: #2d1422; border: 1px dashed var(--accent-dim); border-radius: 8px;
+  padding: 14px 16px; font-size: 13px; color: var(--accent);
+}
+.quiz-veil[hidden] { display: none; }
+.quiz-veil .m-btn { flex: 0 0 auto; }
+
+/* ---------------- Footer ---------------- */
+#footer { padding: 14px 18px 26px; color: var(--text-dim); font-size: 11px; text-align: center; }
+#footer strong { color: var(--warn); }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1180px) {
+  #layout { grid-template-columns: 280px 1fr; }
+  #rightcol { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  #rightcol .panel { margin-bottom: 0; }
+}
+@media (max-width: 1000px) { .brand-sub { display: none; } }
+@media (max-width: 760px) {
+  #layout { grid-template-columns: 1fr; }
+  #centercol { order: -1; }
+  #rightcol { grid-template-columns: 1fr 1fr; }
+  .teach-cols { grid-template-columns: 1fr; gap: 14px; }
+}
+@media (max-width: 460px) {
+  #rightcol { grid-template-columns: 1fr; }
+}
+
+/* =================================================================
+   LIGHT THEME — chrome goes light; the scope stays dark
+   ================================================================= */
+:root[data-theme="light"] {
+  --bg:        #f3eef1;
+  --bg-panel:  #ffffff;
+  --bg-panel2: #f7f2f5;
+  --border:    #e6dde3;
+  --border-lt: #d8cbd4;
+  --text:      #2e2630;
+  --text-dim:  #746974;
+  --text-bright:#1a1119;
+  --accent-dim:#c25c84;
+  --on-accent: #2a0a16;
+}
+:root[data-theme="light"] body { -webkit-font-smoothing: auto; }
+:root[data-theme="light"] #topbar {
+  background: linear-gradient(180deg, #ffffff, #f6eef3);
+  border-bottom-color: var(--border);
+}
+:root[data-theme="light"] .panel,
+:root[data-theme="light"] .case-card,
+:root[data-theme="light"] .status-chip,
+:root[data-theme="light"] .teaching { box-shadow: 0 1px 2px rgba(41, 16, 31, .05); }
+:root[data-theme="light"] .alarm-bar.warn { background: #fff3de; border-color: var(--warn); color: #8a5600; }
+:root[data-theme="light"] .alarm-bar.crit { background: #ffe1e1; border-color: var(--crit); color: #b3261e; }
+:root[data-theme="light"] .chamber { fill: #f7f2f5; }
+:root[data-theme="light"] input[type=range] { background: #e0d4dc; }
+:root[data-theme="light"] input[type=range]::-webkit-slider-thumb { border-color: #ffffff; }
+:root[data-theme="light"] input[type=range]::-moz-range-thumb { border-color: #ffffff; }

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RHC Sim — Right Heart Catheterization Simulator</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ============ HEADER ============ -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo">♥</span>
+      <span class="brand-name">RHC&nbsp;Sim</span>
+      <span class="brand-sub">Right Heart Catheterization Simulator</span>
+    </div>
+    <div class="topbar-status">
+      <div class="status-chip"><label>POSITION</label><span id="posChipVal">RA</span></div>
+      <div class="status-chip" id="caseChip"><label>CASE</label><span id="caseChipVal">Normal</span></div>
+    </div>
+    <div class="transport">
+      <button id="btnQuiz" class="t-btn" title="Hide the diagnosis and quiz yourself">🎓 Quiz</button>
+      <button id="btnFreeze" class="t-btn" title="Freeze / run the tracing">❚❚ Freeze</button>
+      <div class="speed-wrap">
+        <label>Speed</label>
+        <select id="simSpeed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+      <button id="btnTheme" class="t-btn" title="Toggle light / dark theme">☀ Light</button>
+    </div>
+  </header>
+
+  <!-- ============ MAIN GRID ============ -->
+  <main id="layout">
+
+    <!-- LEFT: catheter + schematic + patient -->
+    <aside id="leftcol">
+      <section class="panel">
+        <h2 class="panel-title">Catheter Position</h2>
+        <div class="seg seg-grid" id="posSeg">
+          <button data-pos="RA" class="active">RA</button>
+          <button data-pos="RV">RV</button>
+          <button data-pos="PA">PA</button>
+          <button data-pos="PCWP">PCWP</button>
+        </div>
+        <div class="cath-steppers">
+          <button id="btnWithdraw" class="m-btn">◀ Withdraw</button>
+          <button id="btnAdvance" class="m-btn">Advance ▶</button>
+        </div>
+        <button id="btnAuto" class="m-btn auto-btn">▶ Auto-advance (RA → wedge)</button>
+        <p class="maneuver-hint">Advance RA → RV → PA → wedge, or auto-sweep all four.</p>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Catheter Map</h2>
+        <div id="heartSchematic" class="heart-wrap">
+          <svg viewBox="0 0 260 212" id="heartSvg" xmlns="http://www.w3.org/2000/svg" aria-label="Right heart catheter map">
+            <!-- vessels / chambers -->
+            <path id="ch-pa" class="vessel" d="M104 120 C 118 92 138 64 168 56 L 232 56" />
+            <ellipse id="ch-ra" class="chamber" cx="76" cy="64" rx="34" ry="26" />
+            <path id="ch-rv" class="chamber" d="M44 104 L 120 104 C 128 150 96 182 72 182 C 52 182 44 150 44 116 Z" />
+            <circle id="ch-pcwp" class="chamber wedge" cx="224" cy="82" r="15" />
+            <!-- chamber labels -->
+            <text class="ch-label" x="76" y="68">RA</text>
+            <text class="ch-label" x="80" y="140">RV</text>
+            <text class="ch-label" x="150" y="44">PA</text>
+            <text class="ch-label wedge-label" x="224" y="110">wedge</text>
+            <!-- catheter path segments (shown cumulatively up to current tip) -->
+            <path id="seg-enter" class="cath" d="M76 6 L 76 40" />
+            <path id="seg-ra"    class="cath" d="M76 40 C 76 56 78 78 80 104" />
+            <path id="seg-rv"    class="cath" d="M80 150 C 92 120 120 74 166 58" />
+            <path id="seg-pa"    class="cath" d="M166 58 C 190 62 208 72 220 80" />
+            <!-- balloon-tipped catheter marker -->
+            <g id="cathTip">
+              <ellipse class="balloon" cx="0" cy="0" rx="7" ry="5.5" />
+              <circle class="tipdot" cx="0" cy="0" r="2.6" />
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Patient</h2>
+        <div id="patientControls"><!-- built by ui.js (HR, RR) --></div>
+      </section>
+    </aside>
+
+    <!-- CENTER: waveforms + pullback -->
+    <section id="centercol">
+      <div id="banner" class="alarm-bar"><span id="bannerText">Normal study</span></div>
+
+      <div class="scope" id="scope">
+        <div class="wave-row ecg-row">
+          <div class="wave-label">
+            <span class="wl-title" style="color:var(--c-ecg)">ECG</span>
+            <span class="wl-unit">II</span>
+          </div>
+          <canvas id="cvEcg" class="wave-canvas"></canvas>
+        </div>
+        <div class="wave-row press-row">
+          <div class="wave-label">
+            <span class="wl-title" id="pressLabel" style="color:var(--c-ra)">RA</span>
+            <span class="wl-unit">mmHg</span>
+          </div>
+          <canvas id="cvPressure" class="wave-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="loops">
+        <div class="loop-head">
+          <span>Catheter pullback — composite reference</span>
+          <span class="loop-sub">RA → RV → PA → wedge</span>
+        </div>
+        <canvas id="cvPullback" class="loop-canvas"></canvas>
+      </div>
+    </section>
+
+    <!-- RIGHT: pressures + derived -->
+    <aside id="rightcol">
+      <section class="panel">
+        <h2 class="panel-title">Pressures <span class="truth-tag">mmHg</span></h2>
+        <div id="pressures"><!-- built by ui.js --></div>
+      </section>
+      <section class="panel">
+        <h2 class="panel-title">Derived &amp; Saturations</h2>
+        <div id="derived"><!-- built by ui.js --></div>
+      </section>
+    </aside>
+  </main>
+
+  <!-- ============ CASE LIBRARY ============ -->
+  <section id="caseDrawer" class="case-drawer">
+    <div class="case-drawer-head">
+      <h2>Case Library</h2>
+      <p>Load a hemodynamic profile to reproduce a classic pathology, then walk the catheter through each chamber and read the waveforms.</p>
+    </div>
+    <div id="caseLibrary" class="case-grid"><!-- built by ui.js --></div>
+  </section>
+
+  <!-- ============ TEACHING PANEL ============ -->
+  <section id="teaching" class="teaching">
+    <div class="teaching-head">
+      <h2 id="teachTitle">Normal</h2>
+      <span id="teachCat" class="teach-cat">Baseline</span>
+    </div>
+    <div id="quizVeil" class="quiz-veil" hidden>
+      <span>🎓 Quiz mode — identify the diagnosis from the waveforms &amp; numbers.</span>
+      <button id="btnReveal" class="m-btn">Reveal diagnosis</button>
+    </div>
+    <div id="teachBody">
+      <p id="teachDesc" class="teach-desc"></p>
+      <div class="teach-cols">
+        <div>
+          <h3>Look for on the waveforms</h3>
+          <ul id="teachCues"></ul>
+        </div>
+        <div>
+          <h3>Teaching pearls</h3>
+          <ul id="teachPearls"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="footer">
+    <span>RHC Sim is an educational model of right-heart hemodynamics. Waveforms are stylized for teaching and the numbers are idealized — it is <strong>not</strong> a medical device and must not be used for clinical decisions.</span>
+  </footer>
+
+  <!-- scripts: classic (no modules) so the app runs from file:// by double-click -->
+  <script src="js/engine.js"></script>
+  <script src="js/cases.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
