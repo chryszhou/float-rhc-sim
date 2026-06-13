@@ -69,8 +69,10 @@
     this.buildPressures();
     this.buildDerived();
     this.buildLibrary();
+    this.buildCaseMenu();
     this.buildGauge();
     this.wireCatheter();
+    this.wireCaseMenu();
     this.wireChrome();
   };
 
@@ -284,6 +286,51 @@
     Array.prototype.forEach.call(els.library.children, function (card) {
       card.classList.toggle("active", card.dataset.id === id);
     });
+    var menu = document.getElementById("caseMenu");
+    if (menu) Array.prototype.forEach.call(menu.querySelectorAll(".cm-item"), function (it) {
+      it.classList.toggle("active", it.dataset.id === id);
+    });
+  };
+
+  /* ---------------- header case dropdown ---------------- */
+  UI.buildCaseMenu = function () {
+    var menu = document.getElementById("caseMenu"); if (!menu) return;
+    menu.innerHTML = "";
+    var order = [], by = {};
+    RHC.CASES.forEach(function (c) { if (!by[c.cat]) { by[c.cat] = []; order.push(c.cat); } by[c.cat].push(c); });
+    order.forEach(function (cat) {
+      var h = document.createElement("div"); h.className = "cm-group"; h.textContent = CAT_LABEL[cat] || cat;
+      menu.appendChild(h);
+      by[cat].forEach(function (c) {
+        var it = document.createElement("button");
+        it.type = "button"; it.className = "cm-item"; it.dataset.id = c.id;
+        it.innerHTML = '<span class="cm-dot ' + c.cat + '"></span><span class="cm-name">' + c.name + "</span>";
+        it.addEventListener("click", function () { app.loadCase(c.id); UI.closeCaseMenu(); });
+        menu.appendChild(it);
+      });
+    });
+  };
+  UI.openCaseMenu = function () {
+    document.getElementById("caseMenu").hidden = false;
+    document.getElementById("caseSelect").classList.add("open");
+    document.getElementById("caseChip").setAttribute("aria-expanded", "true");
+  };
+  UI.closeCaseMenu = function () {
+    document.getElementById("caseMenu").hidden = true;
+    document.getElementById("caseSelect").classList.remove("open");
+    document.getElementById("caseChip").setAttribute("aria-expanded", "false");
+  };
+  UI.toggleCaseMenu = function () {
+    if (document.getElementById("caseMenu").hidden) this.openCaseMenu(); else this.closeCaseMenu();
+  };
+  UI.wireCaseMenu = function () {
+    var chip = document.getElementById("caseChip"), sel = document.getElementById("caseSelect");
+    chip.addEventListener("click", function (e) { e.stopPropagation(); UI.toggleCaseMenu(); });
+    chip.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); UI.toggleCaseMenu(); }
+    });
+    document.addEventListener("click", function (e) { if (!sel.contains(e.target)) UI.closeCaseMenu(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") UI.closeCaseMenu(); });
   };
 
   /* ---------------- teaching + quiz ---------------- */

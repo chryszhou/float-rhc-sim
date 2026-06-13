@@ -16,7 +16,13 @@
     </div>
     <div class="topbar-status">
       <div class="status-chip"><label>POSITION</label><span id="posChipVal">RA</span></div>
-      <div class="status-chip" id="caseChip"><label>CASE</label><span id="caseChipVal">Normal</span></div>
+      <div class="case-select" id="caseSelect">
+        <div class="status-chip case-chip" id="caseChip" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false" title="Choose a clinical scenario">
+          <label>CASE</label>
+          <span class="chip-row"><span id="caseChipVal">Normal study</span><span class="chip-caret">▾</span></span>
+        </div>
+        <div class="case-menu" id="caseMenu" hidden><!-- built by ui.js --></div>
+      </div>
     </div>
     <div class="transport">
       <button id="btnQuiz" class="t-btn" title="Hide the diagnosis and quiz yourself">🎓 Quiz</button>
