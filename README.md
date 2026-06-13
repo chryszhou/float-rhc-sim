@@ -1,4 +1,4 @@
-# RHC Sim — Right Heart Catheterization Simulator
+# Float — Right Heart Catheterization Simulator
 
 An interactive, browser-based teaching tool for **right heart catheterization
 (Swan–Ganz) waveforms**. Walk a catheter through the right atrium → right ventricle
@@ -58,9 +58,9 @@ No build, no dependencies. Either:
 
 The files already live at the repo root, so Pages works with no build step:
 
-1. Create a repo (e.g. `rhcsim`) and push this folder to it.
+1. Create a repo (e.g. `float-rhc-sim`) and push this folder to it.
 2. In **Settings → Pages**, set the source to the `main` branch, root (`/`).
-3. The site publishes at `https://<your-username>.github.io/rhcsim/`.
+3. The site publishes at `https://<your-username>.github.io/float-rhc-sim/`.
 
 ## How it works
 

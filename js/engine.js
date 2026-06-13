@@ -1,5 +1,5 @@
 /* ===================================================================
-   RHC Sim — hemodynamic waveform engine
+   Float — hemodynamic waveform engine
    -------------------------------------------------------------------
    Pressure waveforms are *synthesized* from morphology parameters
    (not solved from a chamber ODE) so every teaching feature — a/c/v

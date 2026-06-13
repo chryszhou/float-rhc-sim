@@ -1,5 +1,5 @@
 /* ===================================================================
-   RHC Sim — UI: catheter controls, pressure & derived panels,
+   Float — UI: catheter controls, pressure & derived panels,
    case library, teaching panel, quiz mode, chrome
    =================================================================== */
 (function (RHC) {

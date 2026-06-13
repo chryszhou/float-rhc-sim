@@ -1,5 +1,5 @@
 /* ===================================================================
-   RHC Sim — application bootstrap & real-time loop
+   Float — application bootstrap & real-time loop
    =================================================================== */
 (function (RHC) {
   "use strict";

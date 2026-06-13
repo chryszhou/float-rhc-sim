@@ -1,5 +1,5 @@
 /* ===================================================================
-   RHC Sim — canvas rendering
+   Float — canvas rendering
    -------------------------------------------------------------------
    · Scope    : scrolling ECG strip + pressure tracing (colored by the
                 current catheter position), with an end-expiration band

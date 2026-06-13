@@ -1,5 +1,5 @@
 /* ===================================================================
-   RHC Sim — case library (hemodynamic profiles + teaching content)
+   Float — case library (hemodynamic profiles + teaching content)
    -------------------------------------------------------------------
    hemo numbers are idealized teaching values. Pressures in mmHg.
      ra/pcwp : { mean, a, c, v, x, y, [vPos, vW, aPos] }  morphology
