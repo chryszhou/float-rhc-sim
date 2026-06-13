@@ -64,11 +64,9 @@
     els.patient = document.getElementById("patientControls");
     els.pressures = document.getElementById("pressures");
     els.derived = document.getElementById("derived");
-    els.library = document.getElementById("caseLibrary");
     this.buildPatient();
     this.buildPressures();
     this.buildDerived();
-    this.buildLibrary();
     this.buildCaseMenu();
     this.buildGauge();
     this.wireCatheter();
@@ -243,11 +241,6 @@
       : info.state === "pre" ? "RA"
       : info.blendA + "–" + info.blendB;
     lbl.style.color = RHC.depthColor(sim.depth);
-    // position chip
-    document.getElementById("posChipVal").textContent = info.clean ? info.pos
-      : info.state === "over" ? "PCWP+"
-      : info.state === "pre" ? "RA"
-      : info.blendA + "→" + info.blendB;
     // banner: teaching hint when seated, guidance otherwise
     var banner = document.getElementById("bannerText"), bn = document.getElementById("banner");
     bn.className = "alarm-bar";
@@ -265,27 +258,12 @@
     b.textContent = on ? "■ Stop auto-advance" : "▶ Auto-advance (RA → wedge)";
   };
 
-  /* ---------------- case library ---------------- */
+  /* ---------------- case category labels ---------------- */
   var CAT_LABEL = {
     baseline: "Baseline", "pulm-htn": "Pulmonary HTN", "right-heart": "Right heart",
     pericardial: "Pericardial", shock: "Shock", valve: "Valve"
   };
-  UI.buildLibrary = function () {
-    var grid = els.library; grid.innerHTML = "";
-    RHC.CASES.forEach(function (c) {
-      var card = document.createElement("button"); card.className = "case-card"; card.dataset.id = c.id;
-      card.innerHTML =
-        '<span class="cc-cat ' + c.cat + '">' + (CAT_LABEL[c.cat] || c.cat) + "</span>" +
-        '<div class="cc-name">' + c.name + "</div>" +
-        '<div class="cc-blurb">' + c.blurb + "</div>";
-      card.addEventListener("click", function () { app.loadCase(c.id); });
-      grid.appendChild(card);
-    });
-  };
   UI.markActiveCase = function (id) {
-    Array.prototype.forEach.call(els.library.children, function (card) {
-      card.classList.toggle("active", card.dataset.id === id);
-    });
     var menu = document.getElementById("caseMenu");
     if (menu) Array.prototype.forEach.call(menu.querySelectorAll(".cm-item"), function (it) {
       it.classList.toggle("active", it.dataset.id === id);
