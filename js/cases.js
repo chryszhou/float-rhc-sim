@@ -70,7 +70,7 @@
     blurb: "Group 2 (post-capillary) PH: high wedge but a NORMAL transpulmonary gradient.",
     hemo: {
       hr: 80, rr: 18, bsa: 1.95, hb: 13,
-      ra:  { mean: 12, a: 13, c: 3, v: 11, x: 5, y: 5 },
+      ra:  { mean: 12, a: 13, c: 3, v: 14, x: 5, y: 5 },
       rv:  { sys: 55, diaMin: 10, edp: 14 },
       pa:  { sys: 55, dia: 28, mean: 38 },
       pcwp:{ mean: 26, a: 24, v: 28 },
@@ -96,7 +96,7 @@
     blurb: "Acute cor pulmonale: RV pressure overload, but the thin RV can't generate >~60.",
     hemo: {
       hr: 110, rr: 26, bsa: 1.9, hb: 14,
-      ra:  { mean: 14, a: 12, c: 3, v: 9, x: 4, y: 4 },
+      ra:  { mean: 14, a: 17, c: 3, v: 15, x: 4, y: 4 },
       rv:  { sys: 50, diaMin: 8, edp: 13 },
       pa:  { sys: 50, dia: 22, mean: 33 },
       pcwp:{ mean: 8, a: 9, v: 8 },
@@ -122,7 +122,7 @@
     blurb: "Decompensated RV: high RA, elevated RVEDP, low output.",
     hemo: {
       hr: 92, rr: 18, bsa: 1.95, hb: 15,
-      ra:  { mean: 18, a: 13, c: 3, v: 14, x: 4, y: 7 },
+      ra:  { mean: 18, a: 20, c: 3, v: 22, x: 4, y: 7 },
       rv:  { sys: 42, diaMin: 9, edp: 18 },
       pa:  { sys: 45, dia: 22, mean: 32 },
       pcwp:{ mean: 11, a: 12, v: 11 },
@@ -148,7 +148,7 @@
     blurb: "Giant CV wave — the RA tracing is 'ventricularized'.",
     hemo: {
       hr: 88, rr: 16, bsa: 1.9, hb: 13,
-      ra:  { mean: 16, a: 5, c: 4, v: 22, x: 0, y: 8, vPos: 0.40, vW: 0.085 },
+      ra:  { mean: 16, a: 15, c: 4, v: 32, x: 0, y: 8, vPos: 0.40, vW: 0.085 },
       rv:  { sys: 32, diaMin: 8, edp: 11 },
       pa:  { sys: 32, dia: 12, mean: 20 },
       pcwp:{ mean: 10, a: 11, v: 10 },
@@ -174,10 +174,10 @@
     blurb: "Equalized diastolic pressures, RV dip-and-plateau, prominent x AND y.",
     hemo: {
       hr: 90, rr: 16, bsa: 1.9, hb: 13,
-      ra:  { mean: 18, a: 9, c: 3, v: 9, x: 7, y: 9 },
+      ra:  { mean: 18, a: 20, c: 3, v: 20, x: 7, y: 9 },
       rv:  { sys: 36, diaMin: 6, edp: 18, plateau: true },
       pa:  { sys: 36, dia: 18, mean: 25 },
-      pcwp:{ mean: 18, a: 9, v: 9 },
+      pcwp:{ mean: 18, a: 20, v: 20, x: 6, y: 7 },
       co: 3.8, svo2: 60, sao2: 95, sbp: 112, dbp: 72,
       resp: { depth: 3, dir: 1 }
     },
@@ -200,10 +200,10 @@
     blurb: "Elevated equalized pressures, prominent x with a BLUNTED y, pulsus paradoxus.",
     hemo: {
       hr: 115, rr: 22, bsa: 1.9, hb: 13,
-      ra:  { mean: 18, a: 7, c: 3, v: 6, x: 8, y: 0.5 },
+      ra:  { mean: 18, a: 21, c: 3, v: 20, x: 8, y: 0.5 },
       rv:  { sys: 32, diaMin: 16, edp: 18 },
       pa:  { sys: 32, dia: 18, mean: 24 },
-      pcwp:{ mean: 19, a: 7, v: 6, y: 0.5 },
+      pcwp:{ mean: 19, a: 21, v: 20, y: 0.5 },
       co: 3.0, svo2: 55, sao2: 95, sbp: 98, dbp: 66,
       resp: { depth: 7, dir: -1 }
     },
@@ -226,7 +226,7 @@
     blurb: "High wedge + low cardiac index + high SVR + low SvO₂ (Forrester IV).",
     hemo: {
       hr: 110, rr: 24, bsa: 1.9, hb: 13,
-      ra:  { mean: 14, a: 13, c: 3, v: 12, x: 4, y: 4 },
+      ra:  { mean: 14, a: 17, c: 3, v: 16, x: 4, y: 4 },
       rv:  { sys: 50, diaMin: 12, edp: 14 },
       pa:  { sys: 50, dia: 28, mean: 38 },
       pcwp:{ mean: 28, a: 26, v: 32 },

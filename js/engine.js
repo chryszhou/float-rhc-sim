@@ -35,22 +35,30 @@
 
   /* ---------- Atrial-type waveform: RA and PCWP/wedge ----------
      Baseline (= mean) + Gaussian a/c/v peaks − Gaussian x/y descents.
-     Every fiducial is independently tunable so a case can produce a
-     giant v wave, an absent x, a deep y, etc.                        */
+     `a` and `v` are the ABSOLUTE peak pressures of the a and v waves, so
+     we add only their excursion above the mean (which may be negative — a
+     wave authored at/below the mean reads as a damped/absent wave, e.g. the
+     small a beside MR's giant v). x/y descent defaults scale off the crest
+     height above the mean plus a small floor so every tracing keeps a
+     visible descent. Every fiducial is independently tunable so a case can
+     produce a giant v wave, an absent x, a deep y, etc.                   */
   function atrialWaveAt(ph, p, wedge) {
     var b = p.mean;
-    var a = p.a || 0, c = p.c || 0, v = p.v || 0;
-    var x = (p.x != null) ? p.x : (wedge ? a * 0.22 : a * 0.40);
-    var y = (p.y != null) ? p.y : (wedge ? v * 0.30 : v * 0.40);
+    var a = (p.a != null) ? p.a : b, c = p.c || 0, v = (p.v != null) ? p.v : b;
+    var aAmp = a - b, vAmp = v - b;                 // a/v are absolute peaks
+    var aP = aAmp > 0 ? aAmp : 0, vP = vAmp > 0 ? vAmp : 0;
+    var x = (p.x != null) ? p.x : (wedge ? 0.5 * aP + 1.2 : 0.6 * aP + 1.0);
+    var y = (p.y != null) ? p.y : (wedge ? 0.6 * vP + 1.8 : 0.6 * vP + 1.0);
     var aPos = (p.aPos != null) ? p.aPos : (wedge ? 0.96 : 0.90);
     var vPos = (p.vPos != null) ? p.vPos : (wedge ? 0.55 : 0.47);
     var sa = wedge ? 0.050 : 0.038;
     var sv = (p.vW != null) ? p.vW : (wedge ? 0.060 : 0.045);
     var val = b;
-    val += a * gauss(ph, aPos, sa);                 // a wave (atrial kick)
-    if (!wedge) val += c * gauss(ph, 0.08, 0.022);  // c wave (tricuspid closure)
-    val += v * gauss(ph, vPos, sv);                 // v wave (atrial filling)
-    val -= x * gauss(ph, 0.27, 0.040);              // x descent
+    val += aAmp * gauss(ph, aPos, sa);              // a wave → peaks at `a`
+    // c wave (tricuspid closure, RA only): small notch kept below the a crest
+    if (!wedge) val += Math.min(c, 0.6 * aP) * gauss(ph, 0.08, 0.022);
+    val += vAmp * gauss(ph, vPos, sv);              // v wave → peaks at `v`
+    val -= x * gauss(ph, 0.27, 0.040);              // x descent (mmHg below mean)
     val -= y * gauss(ph, 0.66, 0.045);              // y descent
     return val;
   }
